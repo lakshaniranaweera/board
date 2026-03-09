@@ -1,21 +1,32 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { LOCATION_CONFIG, MAX_PLAYERS } from '../constants';
+import { LOCATION_CONFIG, SCOREBOARD_TOP_PLAYERS } from '../constants';
 import { useGame } from '../context/GameContext';
 import { useStorageSync } from '../hooks/useStorageSync';
 import LeaderboardTable from '../components/LeaderboardTable';
-import { format } from 'date-fns';
-import { FiUsers, FiArrowLeft } from 'react-icons/fi';
 import scoreboardBg from './scoreboard.png';
 
 export default function Scoreboard() {
   const { locationId } = useParams();
-  const { setLocation, users, counter } = useGame();
+  const { setLocation, users } = useGame();
   const cfg = LOCATION_CONFIG[locationId];
+  const [scale, setScale] = useState(1);
 
   useEffect(() => {
     if (locationId) setLocation(locationId);
   }, [locationId, setLocation]);
+
+  useEffect(() => {
+    const updateScale = () => {
+      const w = window.innerWidth / 1080;
+      const h = window.innerHeight / 1920;
+      setScale(Math.min(w, h));
+    };
+
+    updateScale();
+    window.addEventListener('resize', updateScale);
+    return () => window.removeEventListener('resize', updateScale);
+  }, []);
 
   useStorageSync(locationId);
 
@@ -34,67 +45,30 @@ export default function Scoreboard() {
     );
   }
 
-  const scored = users.filter((u) => u.score != null).length;
+  const scoredUsers = users.filter((u) => u.score != null);
 
   return (
-    <div className="flex justify-center items-start min-h-screen bg-gray-950">
+    <div className="w-screen h-screen overflow-hidden bg-gray-950 flex items-center justify-center">
       <div
         className="w-[1080px] h-[1920px] text-white bg-gray-950 bg-center bg-no-repeat relative"
         style={{
           backgroundImage: `url('${scoreboardBg}')`,
           backgroundSize: '1080px 1920px',
+          transform: `scale(${scale})`,
+          transformOrigin: 'center center',
         }}
       >
-        <div className="w-full h-full flex flex-col bg-black/65">
-      {/* Header */}
-      <header className="border-b border-gray-800 px-6 py-4 flex-shrink-0">
-        <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link
-              to={`/location/${locationId}`}
-              className="text-gray-500 hover:text-gray-300 transition-colors"
-            >
-              <FiArrowLeft className="text-xl" />
-            </Link>
-            <div>
-              <h1 className="text-2xl font-bold">
-                🏆{' '}
-                <span style={{ color: cfg.accent }}>{cfg.name}</span>{' '}
-                Leaderboard
-              </h1>
-              <p className="text-gray-500 text-sm">
-                {format(new Date(), 'EEEE, MMMM d, yyyy')} • Live updates
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-4 text-sm">
-            <div className="flex items-center gap-2 text-gray-400">
-              <FiUsers />
-              <span>
-                <strong className="text-white">{counter}</strong> / {MAX_PLAYERS} players
-              </span>
-            </div>
-            <div className="text-gray-400">
-              <strong className="text-white">{scored}</strong> scored
-            </div>
-            <div className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse" title="Live" />
-          </div>
-        </div>
-      </header>
-
+        <div className="w-full h-full flex flex-col" style={{ fontFamily: '"Poppins", sans-serif' }}>
       {/* Leaderboard */}
-      <main className="flex-1 overflow-auto px-6 py-4">
-        <div className="max-w-5xl mx-auto">
-          <LeaderboardTable users={users} />
+      <main className="flex-1 overflow-auto px-8 py-10 flex items-end justify-center pb-8">
+        <div className="w-full max-w-5xl rounded-3xl border border-white/20 bg-white/10 backdrop-blur-xl shadow-[0_20px_60px_rgba(0,0,0,0.45)] p-6">
+          <LeaderboardTable users={scoredUsers} limit={SCOREBOARD_TOP_PLAYERS} />
         </div>
       </main>
 
       {/* Footer ticker */}
-      <footer className="border-t border-gray-800 px-6 py-3 flex-shrink-0">
-        <div className="max-w-5xl mx-auto flex items-center justify-between text-gray-600 text-xs">
-          <span>Game Scoreboard • {cfg.name}</span>
-          <span>Auto-refreshes every 2 seconds</span>
+      <footer className="border-t border-white/20 px-6 py-3 flex-shrink-0">
+        <div className="max-w-5xl mx-auto flex items-center justify-between text-white/75 text-xs">
         </div>
       </footer>
         </div>
